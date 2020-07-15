@@ -1,9 +1,13 @@
 import time
 import os
+import struct
 
 CHIP_ID = 0x00
 READ_MSK = 0x80
 PWR_CONF = 0x7c
+ACC_RANGE = 0x41
+ACC_SELF_TEST =0x6d
+
 #init reg (pg 90)
 INIT_CTRL = 0x59
 INTERNAL_STATUS = 0x2a
@@ -13,12 +17,13 @@ FEATURES_IN = 0x5e
 PWR_CTRL = 0x7d
 ACC_CONF = 0x40
 DATA_8_ADDR = 0x12
-#setting use for the acc_conf register, bit 7 turn on filer, 6-4 average 128 samples (reserved with bit 7 =1), 3-0 1600 sampling rate (pg78)
-CONF_SETTING = 0b11110111
+#setting use for the acc_conf register, bit 7 turn on filer, 6-4 average 16 samples (reserved with bit 7 =1), 3-0 1600 sampling rate (pg78)
+CONF_SETTING = 0xbc
 #reset reg
 CMD = 0x7e
 GRAVITY = 9.80665
-G_RANGE = 2
+G_RANGE = 2.0
+THRESHOLD = 1800
 
 ASIC_MSB = 0x00 >> 4
 ASIC_LSB = 0x00 & 0x0f
@@ -30,22 +35,23 @@ CS_PIN_CMD ='gpio mode %d OUT' % CS_PIN
 CS_LOW_CMD = 'gpio write %d 0' % CS_PIN
 CS_HIGH_CMD = 'gpio write %d 1' %CS_PIN
 
-
 def set_pin():
-	os.system(CS_PIN_CMD)
+        os.system(CS_PIN_CMD)
 
 def cs_low():
-	os.system(cs_low)
+        os.system(cs_low)
 
 def cs_high():
-	os.system(cs_high)
+        os.system(cs_high)
 
 def to_int16(num1,num2):
-	return (num2 << 8 | num1)
+        a= struct.unpack("<h",bytes([num1,num2]))
+        return (a[0])
 
 def half_scale(data):
-	scale_factor = (1 << 16)/2
-	return (GRAVITY * data * G_RANGE)/scale_factor
+        scale_factor = (1 << 16)/2
+        return (GRAVITY * data * G_RANGE)/scale_factor
+
 config_file = [FEATURES_IN,
     0x80, 0x2e, 0x38, 0xb1, 0x80, 0x2e, 0x3a, 0xb1, 0xc8, 0x2e, 0x00, 0x2e, 0x80, 0x2e, 0xff, 0x00, 0x80, 0x2e, 0xe1,
     0xb0, 0x80, 0x2e, 0x39, 0xb1, 0x80, 0x2e, 0xff, 0x01, 0x80, 0x2e, 0x11, 0xb1, 0x50, 0x39, 0x21, 0x2e, 0xb0, 0xf0,
